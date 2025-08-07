@@ -1,0 +1,14 @@
+{
+  "name": "leadertrack-dashboard",
+  "description": "Dashboard de Arquétipos LeaderTrack",
+  "repository": "https://github.com/mar-ramosesteves/leadertrack-dashboard",
+  "keywords": ["python", "streamlit"],
+  "env": {
+    "PYTHON_VERSION": "3.9.18"
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
