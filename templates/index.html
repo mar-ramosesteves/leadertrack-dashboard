@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LeaderTrack - Dashboard de Arquétipos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .result {
+            margin-top: 30px;
+            display: none;
+        }
+        .error {
+            color: #dc3545;
+            background-color: #f8d7da;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success {
+            color: #155724;
+            background-color: #d4edda;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+        .grafico {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .grafico img {
+            max-width: 100%;
+            height: auto;
+        }
+        .analitico {
+            margin-top: 30px;
+        }
+        .grupo {
+            margin-bottom: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .questao {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: white;
+            border-radius: 3px;
+        }
+        .progress-container {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+        .progress-bar {
+            flex: 1;
+            height: 20px;
+            background-color: #e9ecef;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #007bff;
+            transition: width 0.3s ease;
+        }
+        .progress-label {
+            min-width: 60px;
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 LeaderTrack - Dashboard de Arquétipos</h1>
+        
+        <form id="searchForm">
+            <div class="form-group">
+                <label for="empresa">Nome da empresa:</label>
+                <input type="text" id="empresa" name="empresa" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="codrodada">Código da rodada:</label>
+                <input type="text" id="codrodada" name="codrodada" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email_lider">E-mail do líder:</label>
+                <input type="text" id="email_lider" name="email_lider" required>
+            </div>
+            
+            <button type="submit">🔍 Buscar Resultados</button>
+        </form>
+        
+        <div id="loading" class="loading" style="display: none;">
+            Buscando dados no Supabase...
+        </div>
+        
+        <div id="result" class="result">
+            <div id="grafico-container" class="grafico"></div>
+            <div id="analitico-container" class="analitico"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            loading.style.display = 'block';
+            result.style.display = 'none';
+            
+            try {
+                const response = await fetch('/buscar', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    showError(data.error || 'Erro ao buscar dados');
+                }
+            } catch (error) {
+                showError('Erro ao conectar com o servidor');
+            } finally {
+                loading.style.display = 'none';
+            }
+        });
+        
+        function displayResults(data) {
+            const result = document.getElementById('result');
+            const graficoContainer = document.getElementById('grafico-container');
+            const analiticoContainer = document.getElementById('analitico-container');
+            
+            result.style.display = 'block';
+            
+            // Exibir gráfico
+            if (data.grafico_base64) {
+                graficoContainer.innerHTML = `
+                    <h3>🎯 Gráfico Comparativo: Autoavaliação vs Equipe</h3>
+                    <img src="data:image/png;base64,${data.grafico_base64}" alt="Gráfico comparativo">
+                `;
+            } else {
+                graficoContainer.innerHTML = '<div class="error">❌ Erro ao buscar o gráfico comparativo.</div>';
+            }
+            
+            // Exibir dados analíticos
+            if (data.dados_analitico && data.dados_analitico.length > 0) {
+                let analiticoHTML = '<h3>📋 Relatório Analítico por Afirmação</h3>';
+                
+                data.dados_analitico.forEach(grupo => {
+                    analiticoHTML += `<div class="grupo"><h4>🔹 ${grupo.grupoArquetipo}</h4>`;
+                    
+                    grupo.questoes.forEach(item => {
+                        analiticoHTML += `
+                            <div class="questao">
+                                <div>${item.questao}</div>
+                                <div class="progress-container">
+                                    <span>Auto:</span>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${item.autoavaliacao}%"></div>
+                                    </div>
+                                    <span class="progress-label">${item.autoavaliacao}%</span>
+                                </div>
+                                <div class="progress-container">
+                                    <span>Equipe:</span>
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: ${item.mediaEquipe}%"></div>
+                                    </div>
+                                    <span class="progress-label">${item.mediaEquipe}%</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    analiticoHTML += '</div>';
+                });
+                
+                analiticoContainer.innerHTML = analiticoHTML;
+            } else {
+                analiticoContainer.innerHTML = '<div class="error">❌ Erro ao buscar o relatório analítico.</div>';
+            }
+        }
+        
+        function showError(message) {
+            const result = document.getElementById('result');
+            result.style.display = 'block';
+            result.innerHTML = `<div class="error">${message}</div>`;
+        }
+    </script>
+</body>
+</html>
