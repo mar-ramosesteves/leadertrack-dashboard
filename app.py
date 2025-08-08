@@ -1,8 +1,6 @@
 from flask import Flask, render_template, request, jsonify
 import requests
-import base64
 import os
-from io import BytesIO
 
 app = Flask(__name__)
 
